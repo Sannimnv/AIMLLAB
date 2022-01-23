@@ -1,0 +1,29 @@
+import pandas as pd
+import numpy as np
+data=pd.DataFrame(data=pd.read_csv("training.csv"))
+print(data)
+concepts=np.array(data.iloc[:,0:-1])
+targets=np.array(data.iloc[:,-1])
+
+def candi(concept,target):
+    specific=concept[0].copy()
+    general=[['?' for i in range(len(specific))] for j in range(len(specific))]
+    for i,h in enumerate(concept):
+        if target[i]=="yes":
+            for x in range(len(specific)):
+                if h[x]!=specific[x]:
+                    specific[x]='?'
+                    general[x][x]='?'
+        if target[i]=='no':
+            for x in range(len(specific)):
+                if h[x]!=specific[x]:
+                    general[x][x]=specific[x]
+                else:
+                    general[x][x]='?'
+    indices=[i for i,val in enumerate(general) if val==['?','?','?','?','?','?']]
+    for i in indices:
+        general.remove(['?','?','?','?','?','?'])
+    return specific,general
+sp,ge= candi(concepts, targets)
+print("\n\nS:",sp)
+print("\n\nG:",ge)
