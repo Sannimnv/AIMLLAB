@@ -1,0 +1,75 @@
+import pandas as pd
+import numpy as np
+import math
+class Node:
+    def __init__(self,l):
+        self.label=l
+        self.branch={}
+def entropy(data):
+    total_ex=len(data)
+    p_ex=len(data.loc[data[data.columns[-1]]=="Yes"])
+    n_ex=len(data.loc[data[data.columns[-1]]=="No"])
+    en=0
+    if p_ex>0:
+        en=-(p_ex/float(total_ex))*(math.log(p_ex,2)-math.log(total_ex,2))
+    if n_ex>0:
+        en+=-(n_ex/float(total_ex))*(math.log(n_ex,2)-math.log(total_ex,2))
+    return en
+def gain(en,data,attrib):
+    values=set(data[attrib])
+    print(attrib)
+    gain=en
+    for val in values:
+        gain -=(len(data.loc[data[attrib]==val])/float(len(data)))*entropy(data.loc[data[attrib]==val])
+    return gain
+def get_attr(data):
+    en_s=entropy(data)
+    maxgain=0
+    attribut=""
+    for attr in data.columns[:len(data.columns)-1]:
+        g=gain(en_s,data,attr)
+        if g > maxgain:
+            maxgain=g
+            attribut=attr
+    return attribut
+def decision(data):
+    root=Node("NULL")
+    if entropy(data)==0:
+        if len(data.loc[data[data.columns[-1]]=="Yes"])==len(data):
+            root.label="Yes"
+        else:
+            root.label="No"
+        return root
+    if len(data.columns)==1:
+        return
+    else:
+        attr=get_attr(data)
+        root.label=attr
+        values=set(data[attr])
+        print(attr)
+        for val in values:
+            root.branch[val]=decision(data.loc[data[attr]==val].drop(attr,axis=1))
+        return root
+def get_rules(root,rule,rules):
+    if not root.branch:
+        rules.append(rule[:-1]+"=>"+root.label)
+        return rules
+    for val in root.branch:
+        get_rules(root.branch[val], rule+root.label+"="+str(val)+"^", rules)
+    return rules
+def test(tree,teststr):
+    if not tree.branch:
+        return tree.label
+    print(str(teststr[tree.label]),tree.label,teststr)
+    return test(tree.branch[str(teststr[tree.label])],teststr)
+data=pd.read_csv('tennis.csv')
+tree=decision(data)
+rules=get_rules(tree," ",[])
+for rule in rules:
+    print(rule)
+teststr={}
+print("Enter:")
+for attr in data.columns[:-1]:
+    teststr[attr]=input(attr+": ")
+print(teststr)
+print(test(tree,teststr))
